@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AquaSmart - Water Saving & Conservation Portal</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header class="hero">
+        <div class="hero-content">
+            <h1>💧 AquaSave Digital Mission</h1>
+            <p>Learn, Read, and Practice Water Conservation to Save Our Planet's Future.</p>
+            <a href="#topics-section" class="btn-primary">Explore Topics</a>
+            <a href="#exam-section" class="btn-secondary">Exam Registration</a>
+        </div>
+    </header>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="flash-container">
+          {% for category, message in messages %}
+            <div class="flash {{ category }}">{{ message }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    {% if session.get('owner_logged_in') %}
+    <div class="owner-control-bar">
+        <span>🛡️ Owner Mode Active</span>
+        <button onclick="openModal('addTopicModal')" class="btn-glow">+ Add New Topic</button>
+        <a href="{{ url_for('logout') }}" class="btn-logout">Logout</a>
+    </div>
+    {% endif %}
+
+    <main id="topics-section" class="container">
+        <h2>📚 Water Saving Learning Hub</h2>
+        <div class="topics-grid">
+            {% for topic in topics %}
+            <div class="topic-card">
+                <h3>{{ topic[1] }}</h3>
+                <p>{{ topic[2] }}</p>
+                {% if topic[3] %}
+                <div class="video-container">
+                    <iframe src="{{ topic[3] }}" frameborder="0" allowfullscreen></iframe>
+                </div>
+                {% endif %}
+                <div class="topic-body">
+                    {{ topic[4] | safe }}
+                </div>
+                {% if session.get('owner_logged_in') %}
+                <div class="owner-actions">
+                    <button onclick="openEditModal('{{ topic[0] }}', '{{ topic[1] }}', '{{ topic[2] }}', '{{ topic[3] }}', `{{ topic[4] }}`)" class="btn-edit">Edit</button>
+                    <a href="{{ url_for('delete_topic', id=topic[0]) }}" class="btn-delete" onclick="return confirm('Are you sure you want to delete this topic?');">Delete</a>
+                </div>
+                {% endif %}
+            </div>
+            {% else %}
+            <p class="no-data">No topics available yet. Owner can add new topics!</p>
+            {% endfor %}
+        </div>
+    </main>
+
+    <section id="exam-section" class="exam-section">
+        <div class="container exam-box">
+            <h2>📝 Water Conservation Certification Exam Registration</h2>
+            <p>Register now for our upcoming online test and earn your digital badge!</p>
+            <form action="{{ url_for('register_exam') }}" method="POST" class="exam-form">
+                <input type="text" name="name" placeholder="Full Name" required>
+                <input type="email" name="email" placeholder="Email Address" required>
+                <input type="text" name="phone" placeholder="Phone Number" required>
+                <select name="exam_topic" required>
+                    <option value="">Select Exam Module</option>
+                    <option value="Basic Water Management">Basic Water Management</option>
+                    <option value="Rainwater Harvesting Tech">Rainwater Harvesting Tech</option>
+                    <option value="Advanced Irrigation & Saving">Advanced Irrigation & Saving</option>
+                </select>
+                <button type="submit" class="btn-primary">Register For Exam</button>
+            </form>
+        </div>
+    </section>
+
+    <div id="passwordModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('passwordModal')">&times;</span>
+            <h3>🔐 Owner Authentication</h3>
+            <form action="{{ url_for('login') }}" method="POST">
+                <input type="password" name="password" placeholder="Enter Owner Password (2010)" required autofocus>
+                <button type="submit" class="btn-primary">Login</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="addTopicModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('addTopicModal')">&times;</span>
+            <h3>➕ Add New Learning Topic</h3>
+            <form action="{{ url_for('add_topic') }}" method="POST">
+                <input type="text" name="title" placeholder="Topic Title" required>
+                <textarea name="description" placeholder="Short Description" rows="2" required></textarea>
+                <input type="text" name="video_url" placeholder="Embed Video URL (e.g., https://www.youtube.com/embed/...)">
+                <textarea name="content" placeholder="Full Detailed Content / HTML" rows="5" required></textarea>
+                <button type="submit" class="btn-primary">Publish Topic</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="editTopicModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('editTopicModal')">&times;</span>
+            <h3>✏️ Edit Topic</h3>
+            <form id="editForm" method="POST">
+                <input type="text" id="edit_title" name="title" required>
+                <textarea id="edit_description" name="description" rows="2" required></textarea>
+                <input type="text" id="edit_video_url" name="video_url">
+                <textarea id="edit_content" name="content" rows="5" required></textarea>
+                <button type="submit" class="btn-primary">Update Changes</button>
+            </form>
+        </div>
+    </div>
+
+    <footer>
+        <p>&copy; 2026 AquaSave Project. Designed for a Greener Tomorrow. | <span id="secretTrigger" title="Double tap here">♻️</span> Owner Access</p>
+    </footer>
+
+    <script>
+        const trigger = document.getElementById('secretTrigger');
+        let lastTap = 0;
+        trigger.addEventListener('click', function(e) {
+            let currentTime = new Date().getTime();
+            let tapLength = currentTime - lastTap;
+            if (tapLength < 500 && tapLength > 0) {
+                openModal('passwordModal');
+                e.preventDefault();
+            }
+            lastTap = currentTime;
+        });
+
+        function openModal(modalId) {
+            document.getElementById(modalId).style.display = 'block';
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        function openEditModal(id, title, description, videoUrl, content) {
+            document.getElementById('editForm').action = '/edit_topic/' + id;
+            document.getElementById('edit_title').value = title;
+            document.getElementById('edit_description').value = description;
+            document.getElementById('edit_video_url').value = videoUrl === 'None' ? '' : videoUrl;
+            document.getElementById('edit_content').value = content;
+            openModal('editTopicModal');
+        }
+
+        window.onclick = function(event) {
+            if (event.target.classList.contains('modal')) {
+                event.target.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>
